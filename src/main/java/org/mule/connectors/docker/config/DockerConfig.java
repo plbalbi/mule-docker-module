@@ -1,9 +1,9 @@
 package org.mule.connectors.docker.config;
 
-import com.github.dockerjava.api.DockerClient;
 import com.github.dockerjava.core.DefaultDockerClientConfig;
 import com.github.dockerjava.core.DockerClientBuilder;
 import com.github.dockerjava.core.DockerClientConfig;
+import org.mule.connectors.docker.internal.DockerClientOperations;
 import org.mule.connectors.docker.operations.DockerOperations;
 import org.mule.runtime.api.lifecycle.Disposable;
 import org.mule.runtime.api.lifecycle.Initialisable;
@@ -17,42 +17,42 @@ import org.mule.runtime.extension.api.annotation.param.Parameter;
 public class DockerConfig implements Initialisable, Disposable {
 
   @Parameter
-  private String uri;
+  private String host;
 
   @Parameter
   private String version;
 
-  DockerClient dockerClient;
+  private DockerClientOperations dockerOperations;
 
   @Override
   public void initialise() throws InitialisationException {
     DockerClientConfig config = DefaultDockerClientConfig.createDefaultConfigBuilder()
-        .withDockerHost(uri)
+        .withDockerHost(host)
         .withApiVersion(version)
         .build();
-    dockerClient = DockerClientBuilder.getInstance(config).build();
+    dockerOperations = new DockerClientOperations(DockerClientBuilder.getInstance(config).build());
   }
 
   @Override
   public void dispose() {
-    dockerClient = null;
+    dockerOperations = null;
 
   }
 
-  public String getUri() {
-    return uri;
+  public DockerClientOperations getDockerOperations() {
+    return dockerOperations;
+  }
+
+  public String getHost() {
+    return host;
   }
 
   public String getVersion() {
     return version;
   }
 
-  public DockerClient getDockerClient() {
-    return dockerClient;
-  }
-
-  public void setUri(String uri) {
-    this.uri = uri;
+  public void setHost(String host) {
+    this.host = host;
   }
 
   public void setVersion(String version) {

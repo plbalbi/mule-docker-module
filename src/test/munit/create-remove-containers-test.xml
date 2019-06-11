@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+  xmlns:docker="http://www.mulesoft.org/schema/mule/docker"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+  xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+  xmlns="http://www.mulesoft.org/schema/mule/core"
+  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+    http://www.mulesoft.org/schema/mule/docker http://www.mulesoft.org/schema/mule/docker/current/mule-docker.xsd">
+
+  <munit:config name="create-remove-container-test-suite"/>
+
+  <docker:incoming-config name="create-remove-container-config" host="unix:///var/run/docker.sock" version="1.39"/>
+
+  <munit:after-test name="stop-and-remove-created-container">
+    <docker:remove-container config-ref="create-remove-container-config" containerId="#[payload]"/>
+  </munit:after-test>
+
+  <munit:test name="create-container-from-image-binding-ports" description="Test">
+    <munit:execution>
+      <docker:create-container config-ref="create-remove-container-config">
+        <docker:params image="rroemhild/test-openldap:latest">
+          <docker:ports-bindings >
+            <docker:ports-binding key="389" value="389"/>
+          </docker:ports-bindings>
+        </docker:params>
+      </docker:create-container>
+    </munit:execution>
+    <munit:validation>
+      <munit-tools:assert-that expression="#[payload]" is="#[MunitTools::notNullValue()]"/>
+    </munit:validation>
+  </munit:test>
+
+  <munit:test name="create-container-from-image-with-commands" description="Test">
+    <munit:execution>
+      <docker:create-container config-ref="create-remove-container-config">
+        <docker:params image="busybox:latest">
+          <docker:commands >
+            <docker:command value="touch"/>
+            <docker:command value="/test"/>
+          </docker:commands>
+        </docker:params>
+      </docker:create-container>
+    </munit:execution>
+    <munit:validation>
+      <munit-tools:assert-that expression="#[payload]" is="#[MunitTools::notNullValue()]"/>
+    </munit:validation>
+  </munit:test>
+
+  <munit:test name="create-container-from-image-binding-volumes" description="Test">
+    <munit:execution>
+      <docker:create-container config-ref="create-remove-container-config">
+        <docker:params image="busybox:latest">
+          <docker:volumes-bindings>
+            <docker:volumes-binding key="${mule.home}/resources" value="/opt/webapp1"/>
+          </docker:volumes-bindings>
+          <docker:commands>
+            <docker:command value="true"/>
+          </docker:commands>
+        </docker:params>
+      </docker:create-container>
+    </munit:execution>
+    <munit:validation>
+      <munit-tools:assert-that expression="#[payload]" is="#[MunitTools::notNullValue()]"/>
+    </munit:validation>
+  </munit:test>
+
+</mule>
