@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule
+  xmlns:docker="http://www.mulesoft.org/schema/mule/docker"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xmlns:munit="http://www.mulesoft.org/schema/mule/munit"
+  xmlns:munit-tools="http://www.mulesoft.org/schema/mule/munit-tools"
+  xmlns="http://www.mulesoft.org/schema/mule/core"
+  xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+		http://www.mulesoft.org/schema/mule/munit http://www.mulesoft.org/schema/mule/munit/current/mule-munit.xsd
+		http://www.mulesoft.org/schema/mule/munit-tools  http://www.mulesoft.org/schema/mule/munit-tools/current/mule-munit-tools.xsd
+    http://www.mulesoft.org/schema/mule/docker http://www.mulesoft.org/schema/mule/docker/current/mule-docker.xsd">
+
+  <munit:config name="exec-command-test-suite"/>
+
+  <docker:incoming-config name="exec-config" host="unix:///var/run/docker.sock" version="1.39"/>
+
+  <munit:before-test name="create-exec-container">
+    <docker:create-container config-ref="exec-config">
+      <docker:params image="ubuntu:latest">
+        <docker:commands >
+          <docker:command value="sleep"/>
+          <docker:command value="9999"/>
+        </docker:commands>
+      </docker:params>
+    </docker:create-container>
+    <set-variable value="#[payload]" variableName="container-id"/>
+  </munit:before-test>
+
+  <munit:after-test name="remove-exec-container">
+    <docker:remove-container config-ref="create-remove-container-config" containerId="#[vars.'container-id']"/>
+  </munit:after-test>
+
+  <munit:test name="exec-ls-in-ubuntu-container" description="Test">
+    <munit:execution>
+      <docker:execute-command config-ref="exec-config" containerId="#[vars.'container-id']">
+        <docker:commands >
+          <docker:command value="ls"/>
+        </docker:commands>
+      </docker:execute-command>
+    </munit:execution>
+    <munit:validation>
+      <munit-tools:assert-that expression="#[payload]" is="#[MunitTools::notNullValue()]"/>
+    </munit:validation>
+  </munit:test>
+
+</mule>
